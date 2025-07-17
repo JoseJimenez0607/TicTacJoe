@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Joe</title>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #000; /* Fondo negro */
+            color: #fff; /* Texto blanco */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        /* Marcadores */
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 30px;
+            background-color: #333; /* Fondo para los marcadores */
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .score {
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .score span {
+            display: block;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-top: 5px;
+            color: #eee;
+        }
+
+        /* Contenedor del juego */
+        .game-container {
+            background-color: #333; /* Fondo oscuro para el tablero */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 350px; /* Ancho máximo para el tablero */
+        }
+
+        /* Tablero */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px; /* Espacio entre las celdas */
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Hace el tablero cuadrado */
+        }
+
+        .cell {
+            width: 100%;
+            height: auto; /* Ajuste automático de altura */
+            aspect-ratio: 1 / 1; /* Mantiene las celdas cuadradas */
+            background-color: #1a1a1a; /* Fondo de las celdas */
+            border: 2px solid #555; /* Borde más suave */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em; /* Tamaño del símbolo */
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            color: #fff; /* Color de la X y O */
+        }
+
+        .cell:hover {
+            background-color: #444; /* Resaltar al pasar el ratón */
+            transform: scale(1.02);
+        }
+
+        .cell.x {
+            color: #00f; /* Color azul para la X */
+        }
+
+        .cell.o {
+            color: #f00; /* Color rojo para la O */
+        }
+
+        /* Mensaje de estado */
+        .status-message {
+            margin-top: 25px;
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #eee;
+            text-align: center;
+            min-height: 40px; /* Para evitar que el contenido salte */
+        }
+
+        /* Botón de reinicio */
+        .reset-button {
+            background-color: #555; /* Botón oscuro */
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        .reset-button:hover {
+            background-color: #777; /* Resaltar al pasar el ratón */
+            transform: scale(1.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 2em;
+            }
+            .cell {
+                font-size: 2.5em;
+            }
+            .status-message {
+                font-size: 1.4em;
+            }
+            .score {
+                font-size: 1em;
+            }
+            .score span {
+                font-size: 1.5em;
+            }
+            .game-container {
+                padding: 15px;
+            }
+            .score-board {
+                padding: 8px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Tic Tac Joe</h1>
+
+    <div class="score-board">
+        <div class="score">Jugador X: <span id="playerXScore">0</span></div>
+        <div class="score">Jugador O: <span id="playerOScore">0</span></div>
+    </div>
+
+    <div class="game-container">
+        <div class="board" id="gameBoard">
+            <div class="cell" data-cell-index="0"></div>
+            <div class="cell" data-cell-index="1"></div>
+            <div class="cell" data-cell-index="2"></div>
+            <div class="cell" data-cell-index="3"></div>
+            <div class="cell" data-cell-index="4"></div>
+            <div class="cell" data-cell-index="5"></div>
+            <div class="cell" data-cell-index="6"></div>
+            <div class="cell" data-cell-index="7"></div>
+            <div class="cell" data-cell-index="8"></div>
+        </div>
+    </div>
+
+    <div class="status-message" id="statusMessage">Es el turno de X</div>
+
+    <button class="reset-button" id="resetButton">Reiniciar Juego</button>
+
+    <script>
+        const gameBoard = document.getElementById('gameBoard');
+        const cells = document.querySelectorAll('.cell');
+        const statusMessage = document.getElementById('statusMessage');
+        const resetButton = document.getElementById('resetButton');
+        const playerXScoreSpan = document.getElementById('playerXScore');
+        const playerOScoreSpan = document.getElementById('playerOScore');
+
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let playerXScore = 0;
+        let playerOScore = 0;
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Filas
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columnas
+            [0, 4, 8], [2, 4, 6]             // Diagonales
+        ];
+
+        function handleCellClick(e) {
+            const clickedCell = e.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+
+            if (board[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            board[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add(currentPlayer.toLowerCase()); // Añadir clase para color
+
+            checkResult();
+        }
+
+        function checkResult() {
+            let roundWon = false;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = board[winCondition[0]];
+                let b = board[winCondition[1]];
+                let c = board[winCondition[2]];
+
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusMessage.textContent = `¡El jugador ${currentPlayer} ha ganado!`;
+                gameActive = false;
+                updateScore(currentPlayer);
+                return;
+            }
+
+            let roundDraw = !board.includes('');
+            if (roundDraw) {
+                statusMessage.textContent = '¡Empate!';
+                gameActive = false;
+                return;
+            }
+
+            changePlayer();
+        }
+
+        function changePlayer() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusMessage.textContent = `Es el turno de ${currentPlayer}`;
+        }
+
+        function updateScore(winner) {
+            if (winner === 'X') {
+                playerXScore++;
+                playerXScoreSpan.textContent = playerXScore;
+            } else if (winner === 'O') {
+                playerOScore++;
+                playerOScoreSpan.textContent = playerOScore;
+            }
+        }
+
+        function resetGame() {
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            gameActive = true;
+            statusMessage.textContent = `Es el turno de ${currentPlayer}`;
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o'); // Eliminar clases de color
+            });
+        }
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
